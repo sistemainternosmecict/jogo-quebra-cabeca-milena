@@ -6,7 +6,7 @@
 	} = $props();
 </script>
 
-<img class={className} src="/logo_milena2.png" alt="" />
+<img class={className} src="/logo_milena3.png" alt="" />
 
 <style>
     .titulo{
