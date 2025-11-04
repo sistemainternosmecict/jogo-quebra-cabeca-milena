@@ -40,7 +40,7 @@
 		{@const placedPiece = pieces.find((p) => p.isPlaced && p.currentPosition === index)}
 		{@const isCorrectSlot = getSlotHighlight(index)}
 		<div
-			class="puzzle-slot {placedPiece ? 'filled' : 'empty'} {isCorrectSlot ? 'highlight' : ''}"
+			class="puzzle-slot {placedPiece ? 'filled' : 'empty'} "
 			role="region"
 			aria-label="Slot {index + 1} do quebra-cabeça"
 			ondragover={handleDragOver}
@@ -86,13 +86,6 @@
 	.puzzle-slot.empty:hover {
 		background: rgba(82, 145, 173, 0.1);
 		border-color: rgba(82, 145, 173, 0.5);
-	}
-
-	.puzzle-slot.highlight {
-		background: rgba(82, 145, 173, 0.2);
-		border-color: rgba(82, 145, 173, 0.8);
-		border-style: solid;
-		animation: pulse 0.5s infinite;
 	}
 
 	@keyframes pulse {

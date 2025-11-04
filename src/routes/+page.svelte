@@ -1,6 +1,81 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import Titulo from '$lib/components/titulo.svelte';
-	import TituloPuzzle from '$lib/components/tituloPuzzle.svelte';
+	import PuzzlePieceComponent from '$lib/components/puzzlePiece.svelte';
+	import PuzzleBoard from '$lib/components/puzzleBoard.svelte';
+	import PuzzleWinScreen from '$lib/components/puzzleWinScreen.svelte';
+	import {
+		createPuzzlePieces,
+		shufflePuzzlePieces,
+		checkPuzzleComplete,
+		isPieceInCorrectPosition,
+		type PuzzlePiece
+	} from '$lib/utils/puzzleUtils';
+
+	const IMAGE_SRC = '/puzzle/puzzle.jpg';
+	const PIECE_WIDTH = 120;
+	const PIECE_HEIGHT = 160;
+
+	let pieces = $state<PuzzlePiece[]>([]);
+	let draggedPiece = $state<PuzzlePiece | null>(null);
+	let isComplete = $state(false);
+
+	function initializePuzzle() {
+		const initialPieces = createPuzzlePieces(3, 3);
+		pieces = shufflePuzzlePieces(initialPieces);
+		isComplete = false;
+	}
+
+	function handleDragStart(piece: PuzzlePiece) {
+		draggedPiece = piece;
+	}
+
+	function handleDragEnd() {
+		draggedPiece = null;
+	}
+
+	function handlePieceDrop(slotIndex: number) {
+		if (!draggedPiece) return;
+
+		const pieceIndex = pieces.findIndex((p) => p.id === draggedPiece!.id);
+		if (pieceIndex === -1) return;
+
+		// Verificar se a peça pertence a este slot (posição correta)
+		if (pieces[pieceIndex].correctPosition !== slotIndex) {
+			draggedPiece = null;
+			return; // Não permite colocar a peça no lugar errado
+		}
+
+		// Check if slot is already occupied
+		const occupiedPiece = pieces.find((p) => p.isPlaced && p.currentPosition === slotIndex);
+		if (occupiedPiece) return;
+
+		// Update piece position - só chega aqui se for a posição correta
+		pieces[pieceIndex] = {
+			...pieces[pieceIndex],
+			currentPosition: slotIndex,
+			isPlaced: true // Sempre true porque já validamos acima
+		};
+
+		// Check if puzzle is complete
+		if (checkPuzzleComplete(pieces)) {
+			setTimeout(() => {
+				isComplete = true;
+			}, 300);
+		}
+
+		draggedPiece = null;
+	}
+
+	function resetPuzzle() {
+		initializePuzzle();
+	}
+
+	onMount(() => {
+		initializePuzzle();
+	});
+
+	const unplacedPieces = $derived(pieces.filter((p) => !p.isPlaced));
 </script>
 
 <div class="select-none min-h-screen bg-white flex flex-col">
@@ -11,14 +86,14 @@
 		>
 			<Titulo class="logo drag-none w-64 drop-shadow-[0_1px_2px_rgba(0,0,0,1)]" />
 
-			<section class="p-2 flex flex-row items-center">
+			<section class="p-2 flex flex-row items-center gap-4">
 				<img
-					class="drag-none m-2 max-w-20 sm:max-w-28 min-w-[0] drop-shadow-[0_1px_2px_rgba(0,0,0,1)]"
+					class="drag-none max-w-20 sm:max-w-28 drop-shadow-[0_1px_2px_rgba(0,0,0,1)]"
 					src="/LOGO_FLIS.svg"
 					alt="logo da flis"
 				/>
 				<img
-					class="drag-none m-2 max-w-34 sm:max-w-54 min-w-[0] drop-shadow-[0_1px_2px_rgba(0,0,0,1)]"
+					class="drag-none max-w-34 sm:max-w-54 drop-shadow-[0_1px_2px_rgba(0,0,0,1)]"
 					src="/logo_edu.svg"
 					alt="logo da sub de tecnologia"
 				/>
@@ -27,150 +102,62 @@
 	</section>
 
 	<!-- Main Content -->
-	<div class="flex-1 flex flex-col items-center justify-center p-8">
-		<h1 class="text-5xl font-bold text-[#063636] mb-4 poppins-bold text-center">
-			Escolha seu Jogo
-		</h1>
-		<p class="text-xl text-[#5291ad] mb-12 poppins-light text-center">
-			Clique em uma das imagens abaixo para começar a jogar
-		</p>
+	<div class="flex-1 flex flex-col lg:flex-row gap-8 p-8 items-center justify-center">
+		<!-- Puzzle Board -->
+		<div class="flex flex-col items-center gap-2">
+			<h3 class="text-xl font-semibold text-[#063636] poppins-semibold">Imagem de Referência</h3>
+			<div
+				class="reference-image rounded-2xl overflow-hidden shadow-xl border-4 border-[#063636]"
+			>
+				<img src={IMAGE_SRC} alt="Referência" class="w-full h-full object-cover" />
+			</div>
+		</div>
 
-		<div class="grid grid-cols-1 md:grid-cols-2 gap-12 max-w-5xl w-full">
-			<!-- Card Jogo da Memória -->
-			<a href="/memoria" class="game-card-link group">
-				<div class="game-card">
-					<div class="thumbnail-container">
-						<img
-							src="/verso.svg"
-							alt="Jogo da Memória"
-							class="thumbnail-image"
-						/>
-						<div class="overlay">
-							<span class="play-text">▶ Jogar Agora</span>
-						</div>
-					</div>
-				<div class="card-footer">
-					<Titulo class="w-64 mx-auto mb-2" />
-					<p class="text-base text-[#5291ad] poppins-light">
-						Encontre os pares de cartas iguais
-					</p>
-				</div>
-				</div>
-			</a>
+		<div class="flex flex-col items-center gap-4">
+			<!-- <h2 class="text-3xl font-bold text-[#063636] poppins-bold">Monte o Quebra-Cabeça</h2> -->
+			<PuzzleBoard {pieces} imageSrc={IMAGE_SRC} onPieceDrop={handlePieceDrop} {draggedPiece} />
+		</div>
 
-			<!-- Card Quebra-Cabeça -->
-			<a href="/puzzle" class="game-card-link group">
-				<div class="game-card">
-					<div class="thumbnail-container">
-						<img
-							src="/puzzle/puzzle.jpg"
-							alt="Quebra-Cabeça"
-							class="thumbnail-image"
+		<!-- Sidebar -->
+		<div class="flex flex-col gap-6 items-center">
+			<div class="flex flex-col items-center gap-4">
+				<h3 class="text-xl font-semibold text-[#063636] poppins-semibold">
+					Peças Disponíveis ({unplacedPieces.length})
+				</h3>
+				<div class="pieces-container">
+					{#each unplacedPieces as piece (piece.id)}
+						<PuzzlePieceComponent
+							{piece}
+							imageSrc={IMAGE_SRC}
+							pieceWidth={PIECE_WIDTH}
+							pieceHeight={PIECE_HEIGHT}
+							onDragStart={handleDragStart}
+							onDragEnd={handleDragEnd}
 						/>
-						<div class="overlay">
-							<span class="play-text">▶ Jogar Agora</span>
-						</div>
-					</div>
-					<div class="card-footer">
-						<TituloPuzzle class="w-64 mx-auto mb-2" />
-						<p class="text-base text-[#5291ad] poppins-light">
-							Monte a imagem arrastando as peças
-						</p>
-					</div>
+					{/each}
 				</div>
-			</a>
+			</div>
 		</div>
 	</div>
+
+	{#if isComplete}
+		<PuzzleWinScreen resetCallback={resetPuzzle} />
+	{/if}
 </div>
 
 <style>
-	.game-card-link {
-		text-decoration: none;
-		display: block;
+	.reference-image {
+		width: fit-content;
+		height: 500px;
+		object-fit: fill;
 	}
 
-	.game-card {
-		background: white;
-		border-radius: 1.5rem;
-		overflow: hidden;
-		box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-		transition: all 0.3s ease;
-		border: 3px solid transparent;
-		display: flex;
-		flex-direction: column;
-		height: 100%;
-	}
-
-	.game-card-link:hover .game-card {
-		transform: translateY(-8px);
-		box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
-		border-color: #5291ad;
-	}
-
-	.thumbnail-container {
-		position: relative;
-		width: 100%;
-		height: 350px;
-		overflow: hidden;
-		background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
-	}
-
-	.thumbnail-image {
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
-		transition: transform 0.3s ease;
-	}
-
-	.game-card-link:hover .thumbnail-image {
-		transform: scale(1.05);
-	}
-
-	.overlay {
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		background: rgba(6, 54, 54, 0.85);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		opacity: 0;
-		transition: opacity 0.3s ease;
-	}
-
-	.game-card-link:hover .overlay {
-		opacity: 1;
-	}
-
-	.play-text {
-		color: white;
-		font-size: 1.75rem;
-		font-weight: bold;
-		text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-		transform: translateY(10px);
-		transition: transform 0.3s ease;
-	}
-
-	.game-card-link:hover .play-text {
-		transform: translateY(0);
-	}
-
-	.card-footer {
-		padding: 1.5rem;
-		background: #000000;
-		text-align: center;
-		height: 150px;
-		display: flex;
-		flex-direction: column;
-		justify-content: center;
-	}
-
-	.card-footer p {
-		margin: 0;
-		color: #5291ad;
+	.pieces-container {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 1rem;
+		padding: 1rem;
+		background: rgba(6, 54, 54, 0.05);
+		border-radius: 1rem;
 	}
 </style>
-
-

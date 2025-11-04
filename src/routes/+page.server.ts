@@ -1,4 +1,4 @@
-import type { PageServerLoad } from './$types';
+import type { PageServerLoad } from './memoria/$types';
 
 export const prerender = true;
 
