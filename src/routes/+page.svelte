@@ -84,7 +84,7 @@
 		<div
 			class="shadow-xl flex flex-col sm:flex-row items-center bg-[#063636] p-4 z-10 justify-between w-screen"
 		>
-			<Titulo class="logo drag-none w-64 drop-shadow-[0_1px_2px_rgba(0,0,0,1)]" />
+			<Titulo className="logo drag-none w-40" />
 
 			<section class="p-2 flex flex-row items-center gap-4">
 				<img
